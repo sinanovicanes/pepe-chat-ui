@@ -32,7 +32,7 @@ export const SignUpForm = () => {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="flex w-1/3 min-h-screen flex-col gap-4"
+      className="flex w-1/3 min-h-full flex-col gap-4"
       action=""
     >
       <Controller
