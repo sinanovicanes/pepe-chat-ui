@@ -15,4 +15,5 @@ interface ChatSelectionColumn {
   label: string;
   key: string;
   align?: "center" | "end" | "start";
+  hideHeader?: boolean;
 }

@@ -13,6 +13,7 @@ export default [
     id: "actions",
     label: "Actions",
     key: "actions",
-    align: "end"
+    align: "end",
+    hideHeader: true
   }
 ] as ChatSelectionColumn[];

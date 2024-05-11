@@ -1,4 +1,5 @@
 import { VerticalDotsIcon } from "@/components/icons";
+import { leaveFromChatRoom } from "@/utils/api";
 import {
   Button,
   Dropdown,
@@ -6,9 +7,29 @@ import {
   DropdownMenu,
   DropdownTrigger
 } from "@nextui-org/react";
-import { FC } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { FC, useState } from "react";
 
-export const ChatSelectionActions: FC = () => {
+interface Props {
+  roomName: string;
+}
+
+export const ChatSelectionActions: FC<Props> = ({ roomName }) => {
+  const [loading, setLoading] = useState(false);
+  const { data: session } = useSession();
+  const router = useRouter();
+
+  const leave = async () => {
+    if (loading) return;
+
+    setLoading(true);
+
+    await leaveFromChatRoom(roomName, session?.user.accessToken);
+    window.location.reload();
+    setLoading(false);
+  };
+
   return (
     <div className="relative flex justify-end items-center gap-2">
       <Dropdown className="bg-background border-1 border-default-200">
@@ -18,9 +39,12 @@ export const ChatSelectionActions: FC = () => {
           </Button>
         </DropdownTrigger>
         <DropdownMenu>
-          <DropdownItem>View</DropdownItem>
-          <DropdownItem>Edit</DropdownItem>
-          <DropdownItem>Delete</DropdownItem>
+          <DropdownItem key="view" onPress={() => router.push(`/chat/${roomName}`)}>
+            View
+          </DropdownItem>
+          <DropdownItem key="delete" onPress={leave}>
+            Delete
+          </DropdownItem>
         </DropdownMenu>
       </Dropdown>
     </div>

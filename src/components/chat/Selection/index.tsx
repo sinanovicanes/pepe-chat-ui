@@ -19,6 +19,7 @@ import { useSession } from "next-auth/react";
 import { FC, Key, useCallback, useEffect, useMemo, useState } from "react";
 import { ChatSelectionActions } from "./Actions";
 import { JoinNewRoomModal } from "./JoinNewRoomModal";
+import { CreateRoomModal } from "./CreateRoomModal";
 import columns from "./columns";
 
 interface Props {}
@@ -31,8 +32,16 @@ export const ChatSelection: FC<Props> = () => {
   const [chatRooms, setChatRooms] = useState<ExtendedChatRoom[]>([]);
 
   useEffect(() => {
-    fetchChatrooms(session?.user.accessToken).then(setChatRooms);
-  }, []);
+    if (!session?.user.accessToken) return;
+    fetchChatrooms(session?.user.accessToken).then(rooms => {
+      setChatRooms(
+        rooms.map((room: any) => ({
+          id: room._id,
+          ...room
+        }))
+      );
+    });
+  }, [session]);
 
   const [filterValue, setFilterValue] = useState("");
   const [selectedKeys, setSelectedKeys] = useState<Selection>(new Set([]));
@@ -43,6 +52,7 @@ export const ChatSelection: FC<Props> = () => {
   });
   const [page, setPage] = useState(1);
   const joinNewRoomModal = useDisclosure();
+  const createRoomModal = useDisclosure();
 
   const pages = Math.ceil(chatRooms.length / ROWS_PER_PAGE);
 
@@ -62,7 +72,7 @@ export const ChatSelection: FC<Props> = () => {
       case "activeChatters":
         return `${item.activeChatters}/${item.maxChatters}`;
       case "actions":
-        return <ChatSelectionActions />;
+        return <ChatSelectionActions roomName={item.name} />;
       default:
         //@ts-ignore
         return item[columnKey];
@@ -98,12 +108,20 @@ export const ChatSelection: FC<Props> = () => {
           />
           <div className="flex gap-3">
             <Button
-              className="bg-foreground text-background"
-              endContent={<PlusIcon />}
+              endContent={<SearchIcon />}
               size="sm"
+              variant="flat"
               onPress={joinNewRoomModal.onOpen}
             >
               Join New Room
+            </Button>
+            <Button
+              className="bg-foreground text-background"
+              endContent={<PlusIcon />}
+              size="sm"
+              onPress={createRoomModal.onOpen}
+            >
+              Create New Room
             </Button>
           </div>
         </div>
@@ -176,7 +194,11 @@ export const ChatSelection: FC<Props> = () => {
       >
         <TableHeader columns={headerColumns}>
           {column => (
-            <TableColumn key={column.key} align={column.align}>
+            <TableColumn
+              key={column.key}
+              align={column.align}
+              hideHeader={column.hideHeader}
+            >
               {column.label}
             </TableColumn>
           )}
@@ -197,6 +219,7 @@ export const ChatSelection: FC<Props> = () => {
         </TableBody>
       </Table>
       <JoinNewRoomModal disclosure={joinNewRoomModal} />
+      <CreateRoomModal disclosure={createRoomModal} />
     </>
   );
 };

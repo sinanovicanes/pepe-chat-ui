@@ -1,8 +1,8 @@
 "use client";
 
 import { Button, Card, ScrollShadow, Spacer, Textarea } from "@nextui-org/react";
-import { ChatMessage } from "./Message";
 import { useState } from "react";
+import { ChatMessage } from "./Message";
 
 export const Chat = () => {
   const [chatFeed, setChatFeed] = useState<UserMessage[]>([

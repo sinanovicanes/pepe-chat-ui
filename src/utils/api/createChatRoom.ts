@@ -1,13 +1,13 @@
-export const joinNewChatRoom = async (
-  roomName: string,
+export const createChatRoom = async (
+  name: string,
   accessToken?: string
 ): Promise<boolean> => {
   if (!accessToken) return false;
 
-  const response = await fetch("http://localhost:3000/api/chat/join", {
+  const response = await fetch("http://localhost:3000/api/chat", {
     method: "POST",
     mode: "cors",
-    body: JSON.stringify({ roomName }),
+    body: JSON.stringify({ name }),
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${accessToken}`

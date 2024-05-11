@@ -1,5 +1,4 @@
-import { PlusIcon } from "@/components/icons";
-import { joinNewChatRoom } from "@/utils/api";
+import { createChatRoom } from "@/utils/api";
 import {
   Button,
   Input,
@@ -26,17 +25,17 @@ interface Props {
   disclosure: DisclosureProps;
 }
 
-export const JoinNewRoomModal: FC<Props> = ({ disclosure }) => {
+export const CreateRoomModal: FC<Props> = ({ disclosure }) => {
   const [roomName, setRoomName] = useState("");
   const [loading, setLoading] = useState(false);
   const { data: session } = useSession();
 
-  const joinRoom = async () => {
+  const createRoom = async () => {
     if (loading) return;
     if (!roomName) return;
 
     setLoading(true);
-    const success = await joinNewChatRoom(roomName, session?.user.accessToken);
+    const success = await createChatRoom(roomName, session?.user.accessToken);
     setLoading(false);
 
     if (success) return window.location.reload();
@@ -52,7 +51,7 @@ export const JoinNewRoomModal: FC<Props> = ({ disclosure }) => {
         <ModalContent>
           {onClose => (
             <>
-              <ModalHeader className="flex flex-col">Join New Room</ModalHeader>
+              <ModalHeader className="flex flex-col">Create Room</ModalHeader>
               <ModalBody>
                 <Input
                   autoFocus
@@ -67,9 +66,9 @@ export const JoinNewRoomModal: FC<Props> = ({ disclosure }) => {
                   isLoading={loading}
                   isDisabled={!roomName}
                   color="primary"
-                  onPress={joinRoom}
+                  onPress={createRoom}
                 >
-                  Join
+                  Create
                 </Button>
               </ModalFooter>
             </>
