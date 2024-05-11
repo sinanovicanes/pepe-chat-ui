@@ -1,7 +1,6 @@
 "use client";
 
 import { Navbar, NavbarBrand, NavbarContent, NavbarItem, Image } from "@nextui-org/react";
-import { ThemeSwitcher } from "../ThemeSwitcher";
 import { ROUTES } from "@/routes";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -24,16 +23,10 @@ export const NavbarComponent = () => {
       {status === "authenticated" ? (
         <NavbarContent justify="end">
           <UserNavbarItem />
-          <NavbarItem>
-            <ThemeSwitcher />
-          </NavbarItem>
         </NavbarContent>
       ) : (
         <NavbarContent justify="end">
           <LoginAndSignUpButtons />
-          <NavbarItem>
-            <ThemeSwitcher />
-          </NavbarItem>
         </NavbarContent>
       )}
     </Navbar>
