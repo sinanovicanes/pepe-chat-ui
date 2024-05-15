@@ -1,58 +1,139 @@
 "use client";
 
-import { Button, Card, ScrollShadow, Spacer, Textarea } from "@nextui-org/react";
-import { useState } from "react";
+import { SocketConnectionState } from "@/enums/socket";
+import { Button, Card, Chip, ScrollShadow, Spacer, Textarea } from "@nextui-org/react";
+import { useSession } from "next-auth/react";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Socket, io } from "socket.io-client";
 import { ChatMessage } from "./Message";
 
 export const Chat = () => {
+  const params = useParams();
+  const { data: session, status } = useSession();
+  const [socket, setSocket] = useState<Socket | undefined>();
+  const [sending, setSending] = useState(false);
+  const [message, setMessage] = useState("");
+  const [connectionState, setConnectionState] = useState(
+    SocketConnectionState.DISCONNECTED
+  );
   const [chatFeed, setChatFeed] = useState<UserMessage[]>([
     {
-      id: "321321",
-      username: "sinanovicanes",
-      avatar:
-        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsM9oqFgaB094M37R1FypqK9dT_8m1nIjY5g&s",
+      _id: "321321",
+      user: {
+        _id: "321",
+        username: "sinanovicanes",
+        avatar:
+          "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsM9oqFgaB094M37R1FypqK9dT_8m1nIjY5g&s"
+      },
       message: "Hi",
       date: Date.now()
     }
   ]);
 
-  const [sending, setSending] = useState(false);
-  const [message, setMessage] = useState("");
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("connect", () => {
+      socket.emit("joinRoom", params.id);
+      setConnectionState(SocketConnectionState.CONNECTED);
+    });
+
+    socket.on("disconnect", () => {
+      setConnectionState(SocketConnectionState.DISCONNECTED);
+    });
+
+    socket.io.on("reconnect_attempt", () => {
+      setConnectionState(SocketConnectionState.RECONNECTING);
+    });
+
+    socket.on("newMessage", (message: UserMessage) => {
+      setChatFeed(_chatFeed => [..._chatFeed, message]);
+    });
+  }, [socket]);
+
+  const connectToSocket = async () => {
+    const accessToken = session?.user.accessToken;
+
+    if (!accessToken || !!socket) return;
+
+    setSocket(
+      io("http://localhost:3000", {
+        extraHeaders: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      })
+    );
+  };
+
+  const disconnectFromSocket = async () => {
+    if (!socket) return;
+
+    socket.disconnect();
+    setSocket(undefined);
+  };
+
+  useEffect(() => {
+    connectToSocket();
+    return () => {
+      disconnectFromSocket();
+    };
+  }, [session, status]);
 
   function sendMessage() {
+    if (!socket) return;
     if (!message) return;
     if (sending) return;
-
     setSending(true);
 
-    setChatFeed([
-      ...chatFeed,
-      {
-        id: "3213211",
-        username: "sinanovicanes",
-        avatar:
-          "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsM9oqFgaB094M37R1FypqK9dT_8m1nIjY5g&s",
-        message,
-        date: Date.now()
-      }
-    ]);
+    socket.emit("sendMessage", {
+      room: params.id,
+      message
+    });
 
     setMessage("");
     setSending(false);
   }
 
+  const ConnectionStatus = ({ ...props }) => {
+    switch (connectionState) {
+      case SocketConnectionState.CONNECTED:
+        return (
+          <Chip {...props} color="success">
+            Online
+          </Chip>
+        );
+
+      case SocketConnectionState.RECONNECTING:
+        return (
+          <Chip {...props} color="warning">
+            Reconnecting
+          </Chip>
+        );
+
+      default:
+        return (
+          <Chip {...props} color="danger">
+            Offline
+          </Chip>
+        );
+    }
+  };
+
   return (
     <main className="w-full h-full flex items-center justify-center">
       <section className="w-1/2 h-5/6 flex items-center justify-center flex-col gap-2">
-        <Card className="w-full h-5/6 space-y-5 p-4" radius="lg">
+        <ConnectionStatus className="mr-auto" />
+        <Card className="w-full h-[500px] space-y-5 p-4" radius="lg">
           <ScrollShadow hideScrollBar className="w-full h-full">
             {chatFeed.map(m => (
-              <>
-                <div key={m.id}>
-                  <ChatMessage key={m.id} message={m} />
-                  <Spacer key={m.id} />
-                </div>
-              </>
+              <div key={m._id}>
+                <ChatMessage
+                  className={`${session?.user.id === m.user._id && "ml-auto"}`}
+                  message={m}
+                />
+                <Spacer />
+              </div>
             ))}
           </ScrollShadow>
         </Card>
@@ -63,7 +144,11 @@ export const Chat = () => {
           onValueChange={setMessage}
           className="w-full h-1/6"
           endContent={
-            <Button isLoading={sending} isDisabled={!message} onClick={sendMessage}>
+            <Button
+              isLoading={sending}
+              isDisabled={!message || connectionState != SocketConnectionState.CONNECTED}
+              onClick={sendMessage}
+            >
               Send
             </Button>
           }

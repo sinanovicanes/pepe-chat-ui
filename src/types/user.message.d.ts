@@ -1,5 +1,6 @@
-interface UserMessage extends Omit<User, "id"> {
-  id: string;
+interface UserMessage {
+  _id: string;
+  user: User;
   message: string;
   date: number;
 }
