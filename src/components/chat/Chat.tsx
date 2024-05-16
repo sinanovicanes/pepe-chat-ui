@@ -1,13 +1,14 @@
 "use client";
 
 import { SocketConnectionState } from "@/enums/socket";
+import { getChatMessages } from "@/utils/api/getChatMessages";
+import { sendMessage as sendMessageToServer } from "@/utils/api/sendMessage";
 import { Button, Card, Chip, ScrollShadow, Spacer, Textarea } from "@nextui-org/react";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Socket, io } from "socket.io-client";
 import { ChatMessage } from "./Message";
-import { sendMessage as sendMessageToServer } from "@/utils/api/sendMessage";
 
 export const Chat = () => {
   const params = useParams();
@@ -18,19 +19,8 @@ export const Chat = () => {
   const [connectionState, setConnectionState] = useState(
     SocketConnectionState.DISCONNECTED
   );
-  const [chatFeed, setChatFeed] = useState<UserMessage[]>([
-    {
-      _id: "321321",
-      user: {
-        _id: "321",
-        username: "sinanovicanes",
-        avatar:
-          "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsM9oqFgaB094M37R1FypqK9dT_8m1nIjY5g&s"
-      },
-      message: "Hi",
-      date: Date.now()
-    }
-  ]);
+  const [chatFeed, setChatFeed] = useState<UserMessage[]>([]);
+  const scrollRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!socket) return;
@@ -74,7 +64,34 @@ export const Chat = () => {
     setSocket(undefined);
   };
 
+  function scrollToBottom(force?: boolean) {
+    const MIN_SCROLL_HEIGHT = 750;
+    const scroll = scrollRef.current;
+    if (!scroll) return;
+    if (!force && scroll.scrollHeight - scroll.scrollTop > MIN_SCROLL_HEIGHT) return;
+
+    scroll.scroll({
+      top: scroll.scrollHeight,
+      behavior: force ? "instant" : "smooth"
+    });
+  }
+
   useEffect(() => {
+    scrollToBottom();
+  }, [chatFeed]);
+
+  const fetchChatMessages = async () => {
+    const chatMessages = await getChatMessages(
+      params.id as string,
+      session?.user.accessToken
+    );
+
+    setChatFeed(chatMessages);
+    scrollToBottom(true);
+  };
+
+  useEffect(() => {
+    fetchChatMessages();
     connectToSocket();
     return () => {
       disconnectFromSocket();
@@ -99,14 +116,12 @@ export const Chat = () => {
             Online
           </Chip>
         );
-
       case SocketConnectionState.RECONNECTING:
         return (
           <Chip {...props} color="warning">
             Reconnecting
           </Chip>
         );
-
       default:
         return (
           <Chip {...props} color="danger">
@@ -121,7 +136,7 @@ export const Chat = () => {
       <section className="w-1/2 h-5/6 flex items-center justify-center flex-col gap-2">
         <ConnectionStatus className="mr-auto" />
         <Card className="w-full h-[500px] space-y-5 p-4" radius="lg">
-          <ScrollShadow hideScrollBar className="w-full h-full">
+          <ScrollShadow ref={scrollRef} hideScrollBar className="w-full h-full">
             {chatFeed.map(m => (
               <div key={m._id}>
                 <ChatMessage
