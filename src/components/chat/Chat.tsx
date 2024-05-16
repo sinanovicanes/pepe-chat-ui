@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Socket, io } from "socket.io-client";
 import { ChatMessage } from "./Message";
+import { sendMessage as sendMessageToServer } from "@/utils/api/sendMessage";
 
 export const Chat = () => {
   const params = useParams();
@@ -80,17 +81,12 @@ export const Chat = () => {
     };
   }, [session, status]);
 
-  function sendMessage() {
+  async function sendMessage() {
     if (!socket) return;
     if (!message) return;
     if (sending) return;
     setSending(true);
-
-    socket.emit("sendMessage", {
-      room: params.id,
-      message
-    });
-
+    await sendMessageToServer(params.id as string, message, session?.user.accessToken);
     setMessage("");
     setSending(false);
   }
