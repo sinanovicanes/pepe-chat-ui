@@ -6,7 +6,7 @@ import { sendMessage as sendMessageToServer } from "@/utils/api/sendMessage";
 import { Button, Card, Chip, ScrollShadow, Spacer, Textarea } from "@nextui-org/react";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { KeyboardEvent, useEffect, useRef, useState } from "react";
 import { Socket, io } from "socket.io-client";
 import { ChatMessage } from "./Message";
 
@@ -132,6 +132,12 @@ export const Chat = () => {
     }
   };
 
+  function onKeyPress(e: KeyboardEvent<HTMLDivElement>) {
+    if (e.key === "Enter") {
+      return sendMessage();
+    }
+  }
+
   return (
     <main className="w-full h-full flex items-center justify-center">
       <section className="w-1/2 h-5/6 flex items-center justify-center flex-col gap-2">
@@ -155,6 +161,7 @@ export const Chat = () => {
           value={message}
           onValueChange={setMessage}
           className="w-full h-1/6"
+          onKeyDown={onKeyPress}
           endContent={
             <Button
               isLoading={sending}
