@@ -91,12 +91,13 @@ export const Chat = () => {
   };
 
   useEffect(() => {
+    if (status != "authenticated") return;
     fetchChatMessages();
     connectToSocket();
     return () => {
       disconnectFromSocket();
     };
-  }, [session, status]);
+  }, [status]);
 
   async function sendMessage() {
     if (!socket) return;
